@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lower Third Control</title><link rel="stylesheet" href="style.css">
+</head>
+<body class="control-page slots-page">
+  <main class="slots-panel">
+    <header class="dashboard-header"><div><span class="eyebrow">OBS GRAPHICS CONTROL</span><h1>ควบคุมกราฟิก</h1></div><div class="dashboard-status"><span>✓ Lower Third</span><span>◷ Countdown</span><span>✓ 10 Slots</span></div></header>
+    <nav class="dashboard-nav"><span class="active">1. ระบบควบคุม</span><span>2. รายชื่อคน (10 Slots)</span><span>3. Countdown Timer</span></nav>
+    <section class="dashboard-section" aria-label="ตั้งค่าการแสดงผล"><div class="section-title">ตั้งค่ากราฟิก (Global Settings)</div>
+    <section class="display-settings">
+      <label>ขนาด <output id="scaleValue">75%</output><input id="scale" type="range" min="45" max="120" value="75"></label>
+      <label>ความโปร่งใส <output id="opacityValue">100%</output><input id="opacity" type="range" min="20" max="100" value="100"></label>
+      <label>ตำแหน่งแนวนอน<select id="position"><option value="left">ซ้าย</option><option value="center">กลาง</option><option value="right">ขวา</option></select></label>
+      <label>เลื่อนขึ้น–ลง <output id="verticalValue">8%</output><input id="vertical" type="range" min="2" max="35" value="8"></label>
+      <label>สีพื้นหลัง<input id="backgroundColor" type="color" value="#ffffff"></label>
+      <label>สีตัวอักษร<input id="textColor" type="color" value="#17191d"></label>
+      <label>รูปแบบกราฟิก<select id="graphicStyle"><option value="classic">Classic</option><option value="rounded">Rounded</option><option value="minimal">Minimal</option></select></label>
+      <button type="button" id="resetColors" class="reset-colors">รีเซ็ตสีค่าเดิม</button>
+    </section>
+    </section>
+    <section class="dashboard-section timer-section" aria-label="นับถอยหลัง"><div class="section-title">เวลานับถอยหลัง (Countdown Timer)</div><div class="timer-controls"><label>ตั้งเวลา (นาที)<input id="timerMinutes" type="number" min="1" max="999" value="15"></label><output id="timerDisplay">15:00</output><button type="button" id="timerStart" class="timer-start">▶ เริ่ม</button><button type="button" id="timerPause" class="timer-pause">Ⅱ พัก</button><button type="button" id="timerReset" class="timer-reset">↻ รีเซ็ต</button><button type="button" id="timerToggle" class="timer-toggle">ปิด Countdown</button></div><div class="timer-options"><label>ขนาด Countdown <output id="timerScaleValue">100%</output><input id="timerScale" type="range" min="50" max="200" value="100"></label><label class="timer-full"><input id="timerFullScreen" type="checkbox"> แสดง Countdown แบบเต็มจอ</label></div></section>
+    <div class="slots-heading"><div><span class="eyebrow">PEOPLE LIST</span><h1>จัดการข้อมูลผู้ขึ้นจอ <small>(10 Slots)</small></h1></div><button type="button" id="hideAll" class="hide-all">ซ่อน Lower Third</button></div>
+    <div id="slotsGrid" class="slots-grid"></div>
+    <p class="hint">เลือกข้อมูลในช่องที่ต้องการ แล้วกด “เอาขึ้นจอ” · Overlay: <code>/overlay.html</code></p>
+  </main>
+  <script type="module" src="control.js"></script>
+</body>
+</html>
