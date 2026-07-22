@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lower Third Control</title><link rel="stylesheet" href="style.css">
+</head>
+<body class="control-page slots-page">
+  <main class="slots-panel">
+    <header class="dashboard-header"><div><span class="eyebrow">OBS GRAPHICS CONTROL</span><h1>ควบคุมกราฟิก</h1></div><div class="dashboard-status"><span>✓ Lower Third</span><span>◷ Countdown</span><span id="clockStatus">🕒 Clock</span><span>✓ 10 Slots</span></div></header>
+    <nav class="dashboard-nav">
+      <span class="active" data-tab="system">1. ระบบควบคุม</span>
+      <span data-tab="people">2. รายชื่อคน (10 Slots)</span>
+      <span data-tab="timer">3. Countdown Timer</span>
+      <span data-tab="qr">4. QR Code</span>
+      <span data-tab="ticker">5. Ticker</span>
+      <span data-tab="watermark">6. Watermark</span>
+    </nav>
+    <section class="dashboard-section" data-tab="system" aria-label="ตั้งค่าการแสดงผล"><div class="section-title">ตั้งค่ากราฟิก (Global Settings)</div>
+    <section class="display-settings">
+      <label>ขนาด <output id="scaleValue">75%</output><input id="scale" type="range" min="45" max="120" value="75"></label>
+      <label>ความโปร่งใส <output id="opacityValue">100%</output><input id="opacity" type="range" min="20" max="100" value="100"></label>
+      <label>ตำแหน่งแนวนอน<select id="position"><option value="left">ซ้าย</option><option value="center">กลาง</option><option value="right">ขวา</option></select></label>
+      <label>เลื่อนขึ้น–ลง <output id="verticalValue">8%</output><input id="vertical" type="range" min="2" max="35" value="8"></label>
+      <label>สีพื้นหลัง<input id="backgroundColor" type="color" value="#ffffff"></label>
+      <label>สีตัวอักษร<input id="textColor" type="color" value="#17191d"></label>
+      <label>รูปแบบกราฟิก<select id="graphicStyle"><option value="classic">Classic</option><option value="rounded">Rounded</option><option value="minimal">Minimal</option></select></label>
+      <button type="button" id="resetColors" class="reset-colors">รีเซ็ตสีค่าเดิม</button>
+    </section>
+    </section>
+    <section class="dashboard-section" data-tab="system" aria-label="ตั้งค่านาฬิกา"><div class="section-title">นาฬิกา (Clock)</div>
+    <section class="display-settings">
+      <label>ขนาด <output id="clockScaleValue">100%</output><input id="clockScale" type="range" min="50" max="220" value="100"></label>
+      <label>ตำแหน่งแนวนอน<select id="clockPosition"><option value="left">ซ้าย</option><option value="center" selected>กลาง</option><option value="right">ขวา</option></select></label>
+      <label>เลื่อนขึ้น–ลง <output id="clockVerticalValue">4%</output><input id="clockVertical" type="range" min="2" max="90" value="4"></label>
+      <button type="button" id="clockToggle" class="reset-colors">ปิด Clock</button>
+    </section>
+    </section>
+    <section class="dashboard-section" data-tab="system" aria-label="Preset"><div class="section-title">Preset ตำแหน่ง/สไตล์</div>
+    <div class="preset-controls">
+      <select id="presetSelect"><option value="">— เลือก Preset —</option></select>
+      <button type="button" id="presetApply" class="reset-colors">▶ ใช้ Preset</button>
+      <button type="button" id="presetDelete" class="reset-colors">✕ ลบ</button>
+      <input id="presetName" type="text" maxlength="30" placeholder="ตั้งชื่อ Preset เช่น โหมดสัมภาษณ์">
+      <button type="button" id="presetSave" class="reset-colors">💾 บันทึกเป็น Preset ใหม่</button>
+    </div>
+    </section>
+    <section class="dashboard-section timer-section" data-tab="timer" aria-label="นับถอยหลัง"><div class="section-title">เวลานับถอยหลัง (Countdown Timer)</div><div class="timer-controls"><label>ตั้งเวลา (นาที)<input id="timerMinutes" type="number" min="1" max="999" value="15"></label><output id="timerDisplay">15:00</output><button type="button" id="timerStart" class="timer-start">▶ เริ่ม</button><button type="button" id="timerPause" class="timer-pause">Ⅱ พัก</button><button type="button" id="timerReset" class="timer-reset">↻ รีเซ็ต</button><button type="button" id="timerToggle" class="timer-toggle">ปิด Countdown</button></div><div class="timer-options"><label>ขนาด Countdown <output id="timerScaleValue">100%</output><input id="timerScale" type="range" min="50" max="200" value="100"></label><label class="timer-full"><input id="timerFullScreen" type="checkbox"> แสดง Countdown แบบเต็มจอ</label></div></section>
+    <div class="slots-heading" data-tab="people"><div><span class="eyebrow">PEOPLE LIST</span><h1>จัดการข้อมูลผู้ขึ้นจอ <small>(10 Slots)</small></h1></div><button type="button" id="hideAll" class="hide-all">ซ่อน Lower Third</button></div>
+    <div id="slotsGrid" class="slots-grid" data-tab="people"></div>
+    <section class="dashboard-section" data-tab="qr" aria-label="QR Code"><div class="section-title">QR Code</div>
+    <section class="display-settings">
+      <label class="wide-field">ลิงก์ / ข้อความ<input id="qrUrl" type="text" maxlength="300" placeholder="https://..."></label>
+      <label>ขนาด <output id="qrScaleValue">100%</output><input id="qrScale" type="range" min="50" max="200" value="100"></label>
+      <label>ตำแหน่งแนวนอน<select id="qrPosition"><option value="left">ซ้าย</option><option value="center">กลาง</option><option value="right" selected>ขวา</option></select></label>
+      <label>เลื่อนขึ้น–ลง <output id="qrVerticalValue">6%</output><input id="qrVertical" type="range" min="2" max="90" value="6"></label>
+      <button type="button" id="qrToggle" class="reset-colors">ปิด QR</button>
+    </section>
+    <div class="timer-options"><label class="timer-full"><input id="qrFullScreen" type="checkbox"> แสดง QR แบบเต็มจอ</label></div>
+    </section>
+    <section class="dashboard-section" data-tab="ticker" aria-label="แถบข่าว"><div class="section-title">แถบข่าว (Ticker)</div>
+    <section class="display-settings">
+      <label class="wide-field">ข้อความวิ่ง<input id="tickerText" type="text" maxlength="220" placeholder="พิมพ์ข้อความประกาศ..."></label>
+      <label>ความเร็ว <output id="tickerSpeedValue">140</output><input id="tickerSpeed" type="range" min="40" max="400" value="140"></label>
+      <label>ขนาดตัวอักษร <output id="tickerScaleValue">100%</output><input id="tickerScale" type="range" min="50" max="220" value="100"></label>
+      <button type="button" id="tickerToggle" class="reset-colors">ปิด Ticker</button>
+    </section>
+    </section>
+    <section class="dashboard-section" data-tab="watermark" aria-label="โลโก้ประจำจอ"><div class="section-title">โลโก้ประจำจอ (Watermark)</div>
+    <section class="display-settings">
+      <label class="logo-picker-wide wide-field">อัปโหลดโลโก้<input id="watermarkFile" type="file" accept="image/png,image/jpeg,image/webp"></label>
+      <label>ขนาด <output id="watermarkScaleValue">100%</output><input id="watermarkScale" type="range" min="40" max="200" value="100"></label>
+      <label>ตำแหน่ง<select id="watermarkPosition"><option value="top-left">บนซ้าย</option><option value="top-right" selected>บนขวา</option><option value="bottom-left">ล่างซ้าย</option><option value="bottom-right">ล่างขวา</option></select></label>
+      <button type="button" id="watermarkToggle" class="reset-colors">ปิด Watermark</button>
+    </section>
+    </section>
+    <p class="hint">เลือกข้อมูลในช่องที่ต้องการ แล้วกด "เอาขึ้นจอ" · Overlay: <code>/overlay.html</code></p>
+    <p class="hint">⌨️ คีย์ลัด: <code>Space</code> เอาคนถัดไปขึ้นจอ · <code>1–9, 0</code> เลือกคนที่ N ทันที · <code>Esc</code> ปิด Lower Third (ใช้ไม่ได้ขณะพิมพ์ในช่องข้อความ)</p>
+  </main>
+  <script type="module" src="control.js"></script>
+</body>
+</html>
