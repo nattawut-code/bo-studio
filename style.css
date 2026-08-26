@@ -45,8 +45,9 @@ label { display:block; margin-top:15px; color:#424950; font-size:15px; font-weig
 .preset-controls { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding-top:12px; }.preset-controls select { height:33px; padding:4px 8px; border:1px solid #444; border-radius:4px; background:#101010; color:#eee; min-width:170px; }.preset-controls input[type=text] { flex:1 1 200px; height:33px; padding:0 10px; border:1px solid #444; border-radius:4px; background:#101010; color:#eee; }
 .reset-colors { align-self:end; flex:0 0 auto; padding:7px 10px; border:1px solid #555; background:#343434; color:#ddd; font-size:13px; }.reset-colors:hover { background:#505050; }.reset-colors.is-off { background:#2a2a2a; color:#8a8a8a; border-color:#3a3a3a; }
 .dashboard-status #clockStatus.is-off { color:#8a8a8a; }
-.quick-toggles { flex-wrap:wrap; }
-.quick-toggles .qt-item { display:flex; align-items:center; gap:6px; color:#8a8a8a; font-size:13px; cursor:pointer; user-select:none; transition:color .15s; }
-.quick-toggles .qt-item input[type=checkbox] { width:15px; height:15px; accent-color:#3ddc72; cursor:pointer; }
-.quick-toggles .qt-item.is-on { color:#8dd7a2; }
+.quick-toggles { flex-wrap:wrap; gap:8px; }
+.quick-toggles .qt-item { display:flex; align-items:center; gap:8px; padding:7px 14px; border:1px solid #3d3d3d; border-radius:7px; background:#242424; color:#d6d6d6; font-size:14px; font-weight:600; cursor:pointer; user-select:none; transition:background .15s,color .15s,border-color .15s; }
+.quick-toggles .qt-item:hover { border-color:#565656; }
+.quick-toggles .qt-item input[type=checkbox] { width:17px; height:17px; accent-color:#3ddc72; cursor:pointer; }
+.quick-toggles .qt-item.is-on { background:#173023; border-color:#3ddc72; color:#7fe8a4; }
 @media (max-width:720px) { .slots-page { padding:9px; }.slots-panel { padding:11px; }.slots-heading { align-items:flex-start; }.slots-heading h1 { font-size:17px; }.display-settings { grid-template-columns:1fr; gap:8px; }.slots-grid { grid-template-columns:1fr; }.slot-card { padding:10px; } }

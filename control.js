@@ -7,7 +7,7 @@ const presetSelect = document.querySelector('#presetSelect'), presetApplyBtn = d
 const tickerTextInput = document.querySelector('#tickerText'), tickerSpeedInput = document.querySelector('#tickerSpeed'), tickerScaleInput = document.querySelector('#tickerScale'), tickerToggleBtn = document.querySelector('#tickerToggle');
 const qrUrlInput = document.querySelector('#qrUrl'), qrScale = document.querySelector('#qrScale'), qrPosition = document.querySelector('#qrPosition'), qrVertical = document.querySelector('#qrVertical'), qrToggleBtn = document.querySelector('#qrToggle'), qrFullScreen = document.querySelector('#qrFullScreen');
 const watermarkFile = document.querySelector('#watermarkFile'), watermarkScale = document.querySelector('#watermarkScale'), watermarkPosition = document.querySelector('#watermarkPosition'), watermarkToggleBtn = document.querySelector('#watermarkToggle');
-const qtClock = document.querySelector('#qtClock'), qtTimer = document.querySelector('#qtTimer'), qtTicker = document.querySelector('#qtTicker'), qtLowerThird = document.querySelector('#qtLowerThird');
+const qtClock = document.querySelector('#qtClock'), qtTimer = document.querySelector('#qtTimer'), qtTicker = document.querySelector('#qtTicker'), qtLowerThird = document.querySelector('#qtLowerThird'), qtQr = document.querySelector('#qtQr'), qtWatermark = document.querySelector('#qtWatermark');
 let slots = [], currentVisible = false, saveTimer, timer = { duration:900, remaining:900, running:false, startedAt:null, visible:true }, clockState = { visible:true }, tickerState = { visible:true }, qrState = { visible:true }, watermarkState = { visible:true, logo:'' }, activeSlotIndex = -1;
 function defaults() { return Array.from({ length:10 }, (_, index) => ({ id:index+1, name:`ชื่อ-นามสกุล คนที่ ${index+1}`, role:'ตำแหน่ง / รายละเอียด', logo:'' })); }
 function remainingTimer() { return timer.running ? Math.max(0, timer.remaining - Math.floor((Date.now() - timer.startedAt) / 1000)) : timer.remaining; }
@@ -18,6 +18,8 @@ function syncQuickToggles() {
     setQtState(qtTimer, timer.visible);
     setQtState(qtTicker, tickerState.visible);
     setQtState(qtLowerThird, currentVisible);
+    setQtState(qtQr, qrState.visible);
+    setQtState(qtWatermark, watermarkState.visible);
 }
 function queueSave() { clearTimeout(saveTimer); saveTimer = setTimeout(() => saveSlots(), 450); }
 async function saveSlots(visible = currentVisible, activeSlot = null) {
@@ -90,7 +92,7 @@ tickerSpeedInput.addEventListener('input',()=>{document.querySelector('#tickerSp
 bindDisplayControl(tickerScaleInput,document.querySelector('#tickerScaleValue'));
 tickerToggleBtn.addEventListener('click',()=>{tickerState.visible=!tickerState.visible;renderTickerToggle();saveSlots();});
 
-function renderQrToggle(){qrToggleBtn.textContent=qrState.visible?'ปิด QR':'เปิด QR';qrToggleBtn.classList.toggle('is-off',!qrState.visible);}
+function renderQrToggle(){qrToggleBtn.textContent=qrState.visible?'ปิด QR':'เปิด QR';qrToggleBtn.classList.toggle('is-off',!qrState.visible);syncQuickToggles();}
 bindDisplayControl(qrScale,document.querySelector('#qrScaleValue'));
 bindDisplayControl(qrVertical,document.querySelector('#qrVerticalValue'));
 qrUrlInput.addEventListener('input',queueSave);
@@ -98,7 +100,7 @@ qrPosition.addEventListener('input',queueSave);
 qrFullScreen.addEventListener('change',queueSave);
 qrToggleBtn.addEventListener('click',()=>{qrState.visible=!qrState.visible;renderQrToggle();saveSlots();});
 
-function renderWatermarkToggle(){watermarkToggleBtn.textContent=watermarkState.visible?'ปิด Watermark':'เปิด Watermark';watermarkToggleBtn.classList.toggle('is-off',!watermarkState.visible);}
+function renderWatermarkToggle(){watermarkToggleBtn.textContent=watermarkState.visible?'ปิด Watermark':'เปิด Watermark';watermarkToggleBtn.classList.toggle('is-off',!watermarkState.visible);syncQuickToggles();}
 bindDisplayControl(watermarkScale,document.querySelector('#watermarkScaleValue'));
 watermarkPosition.addEventListener('input',queueSave);
 watermarkToggleBtn.addEventListener('click',()=>{watermarkState.visible=!watermarkState.visible;renderWatermarkToggle();saveSlots();});
@@ -108,6 +110,8 @@ qtClock.addEventListener('change',()=>{clockState.visible=qtClock.checked;render
 qtTimer.addEventListener('change',()=>{timer.visible=qtTimer.checked;renderTimerToggle();saveSlots();});
 qtTicker.addEventListener('change',()=>{tickerState.visible=qtTicker.checked;renderTickerToggle();saveSlots();});
 qtLowerThird.addEventListener('change',()=>{saveSlots(qtLowerThird.checked);});
+qtQr.addEventListener('change',()=>{qrState.visible=qtQr.checked;renderQrToggle();saveSlots();});
+qtWatermark.addEventListener('change',()=>{watermarkState.visible=qtWatermark.checked;renderWatermarkToggle();saveSlots();});
 
 const PRESET_KEY = 'boStudioPresets';
 function loadPresets(){ try { return JSON.parse(localStorage.getItem(PRESET_KEY)) || []; } catch { return []; } }
