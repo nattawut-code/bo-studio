@@ -109,9 +109,34 @@ watermarkFile.addEventListener('change',event=>{const picked=event.target.files[
 qtClock.addEventListener('change',()=>{clockState.visible=qtClock.checked;renderClockToggle();saveSlots();});
 qtTimer.addEventListener('change',()=>{timer.visible=qtTimer.checked;renderTimerToggle();saveSlots();});
 qtTicker.addEventListener('change',()=>{tickerState.visible=qtTicker.checked;renderTickerToggle();saveSlots();});
-qtLowerThird.addEventListener('change',()=>{saveSlots(qtLowerThird.checked);});
-qtQr.addEventListener('change',()=>{qrState.visible=qtQr.checked;renderQrToggle();saveSlots();});
-qtWatermark.addEventListener('change',()=>{watermarkState.visible=qtWatermark.checked;renderWatermarkToggle();saveSlots();});
+qtLowerThird.addEventListener('change',()=>{
+    if (qtLowerThird.checked && activeSlotIndex === -1) {
+        showTab('people');
+        qtLowerThird.checked = false;
+        alert('ยังไม่เคยกด "เอาขึ้นจอ" ให้ใครเลย — เลือกคนในแท็บ "รายชื่อคน" แล้วกด "เอาขึ้นจอ" ก่อน');
+        return;
+    }
+    saveSlots(qtLowerThird.checked);
+});
+qtQr.addEventListener('change',()=>{
+    if (qtQr.checked && !qrUrlInput.value.trim()) {
+        showTab('qr');
+        qrUrlInput.focus();
+        qtQr.checked = false;
+        alert('ยังไม่ได้ใส่ลิงก์ / ข้อความ QR — กรอกในแท็บ "QR Code" ก่อน');
+        return;
+    }
+    qrState.visible=qtQr.checked;renderQrToggle();saveSlots();
+});
+qtWatermark.addEventListener('change',()=>{
+    if (qtWatermark.checked && !watermarkState.logo) {
+        showTab('watermark');
+        qtWatermark.checked = false;
+        alert('ยังไม่ได้อัปโหลดโลโก้ — เลือกไฟล์ในแท็บ "Watermark" ก่อน');
+        return;
+    }
+    watermarkState.visible=qtWatermark.checked;renderWatermarkToggle();saveSlots();
+});
 
 const PRESET_KEY = 'boStudioPresets';
 function loadPresets(){ try { return JSON.parse(localStorage.getItem(PRESET_KEY)) || []; } catch { return []; } }
