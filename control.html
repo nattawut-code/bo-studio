@@ -6,7 +6,12 @@
 </head>
 <body class="control-page slots-page">
   <main class="slots-panel">
-    <header class="dashboard-header"><div><span class="eyebrow">OBS GRAPHICS CONTROL</span><h1>ควบคุมกราฟิก</h1></div><div class="dashboard-status"><span>✓ Lower Third</span><span>◷ Countdown</span><span id="clockStatus">🕒 Clock</span><span>✓ 10 Slots</span></div></header>
+    <header class="dashboard-header"><div><span class="eyebrow">OBS GRAPHICS CONTROL</span><h1>ควบคุมกราฟิก</h1></div><div class="dashboard-status quick-toggles">
+      <label class="qt-item"><input type="checkbox" id="qtClock"> นาฬิกา</label>
+      <label class="qt-item"><input type="checkbox" id="qtTimer"> จับเวลา</label>
+      <label class="qt-item"><input type="checkbox" id="qtTicker"> ตัววิ่ง</label>
+      <label class="qt-item"><input type="checkbox" id="qtLowerThird"> ป้ายชื่อ</label>
+    </div></header>
     <nav class="dashboard-nav">
       <span class="active" data-tab="system">1. ระบบควบคุม</span>
       <span data-tab="people">2. รายชื่อคน (10 Slots)</span>
