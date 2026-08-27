@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // จอ overlay.html ต้องอ่านได้โดยไม่ล็อกอิน จึงเปิด read ให้ทุกคน
+    // ส่วน write จำกัดไว้เฉพาะ 2 เอกสารที่แอปนี้ใช้จริงเท่านั้น
+    match /bo-studio/state {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasAny(['visible', 'slots', 'scale']);
+    }
+
+    match /bo-studio/presets {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasAny(['list']);
+    }
+
+    // ปิดทุก path อื่นที่ไม่ใช่ 2 เอกสารข้างบน กันไม่ให้ใครสร้างเอกสารมั่วมาถล่ม quota
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

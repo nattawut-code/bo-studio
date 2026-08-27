@@ -1,4 +1,5 @@
-import { stateRef, getDoc, setDoc } from "./firestore.js";
+import { stateRef, presetsRef, getDoc, setDoc } from "./firestore.js";
+import { uploadLogo } from "./storage.js";
 const grid = document.querySelector('#slotsGrid');
 const scaleInput = document.querySelector('#scale'), opacityInput = document.querySelector('#opacity'), positionInput = document.querySelector('#position'), verticalInput = document.querySelector('#vertical'), backgroundColorInput = document.querySelector('#backgroundColor'), textColorInput = document.querySelector('#textColor'), graphicStyleInput = document.querySelector('#graphicStyle'), effectStyleInput = document.querySelector('#effectStyle');
 const timerMinutes = document.querySelector('#timerMinutes'), timerDisplay = document.querySelector('#timerDisplay'), timerToggle = document.querySelector('#timerToggle'), timerScale = document.querySelector('#timerScale'), timerFullScreen = document.querySelector('#timerFullScreen');
@@ -8,11 +9,23 @@ const tickerTextInput = document.querySelector('#tickerText'), tickerSpeedInput 
 const qrUrlInput = document.querySelector('#qrUrl'), qrScale = document.querySelector('#qrScale'), qrPosition = document.querySelector('#qrPosition'), qrVertical = document.querySelector('#qrVertical'), qrToggleBtn = document.querySelector('#qrToggle'), qrFullScreen = document.querySelector('#qrFullScreen');
 const watermarkFile = document.querySelector('#watermarkFile'), watermarkScale = document.querySelector('#watermarkScale'), watermarkPosition = document.querySelector('#watermarkPosition'), watermarkToggleBtn = document.querySelector('#watermarkToggle');
 const qtClock = document.querySelector('#qtClock'), qtTimer = document.querySelector('#qtTimer'), qtTicker = document.querySelector('#qtTicker'), qtLowerThird = document.querySelector('#qtLowerThird'), qtQr = document.querySelector('#qtQr'), qtWatermark = document.querySelector('#qtWatermark');
+const syncStatusEl = document.querySelector('#syncStatus');
+const previewToggleBtn = document.querySelector('#togglePreview'), livePreviewBox = document.querySelector('#livePreview');
 let slots = [], currentVisible = false, saveTimer, timer = { duration:900, remaining:900, running:false, startedAt:null, visible:true }, clockState = { visible:true }, tickerState = { visible:true }, qrState = { visible:true }, watermarkState = { visible:true, logo:'' }, activeSlotIndex = -1;
 function defaults() { return Array.from({ length:10 }, (_, index) => ({ id:index+1, name:`ชื่อ-นามสกุล คนที่ ${index+1}`, role:'ตำแหน่ง / รายละเอียด', logo:'' })); }
 function remainingTimer() { return timer.running ? Math.max(0, timer.remaining - Math.floor((Date.now() - timer.startedAt) / 1000)) : timer.remaining; }
 function renderTimer() { const value = remainingTimer(); timerDisplay.textContent = `${String(Math.floor(value / 60)).padStart(2,'0')}:${String(value % 60).padStart(2,'0')}`; }
 function setQtState(input, on) { if (!input) return; input.checked = on; input.parentElement.classList.toggle('is-on', on); }
+function setSyncStatus(state) {
+    if (!syncStatusEl) return;
+    syncStatusEl.classList.remove('sync-saving', 'sync-saved', 'sync-error', 'sync-offline');
+    if (state === 'saving') { syncStatusEl.textContent = '● กำลังบันทึก...'; syncStatusEl.classList.add('sync-saving'); }
+    else if (state === 'error') { syncStatusEl.textContent = '⚠ บันทึกไม่สำเร็จ'; syncStatusEl.classList.add('sync-error'); }
+    else if (state === 'offline') { syncStatusEl.textContent = '⚠ ออฟไลน์ / ไม่มีเน็ต'; syncStatusEl.classList.add('sync-offline'); }
+    else { syncStatusEl.textContent = '● บันทึกแล้ว'; syncStatusEl.classList.add('sync-saved'); }
+}
+window.addEventListener('online', () => setSyncStatus('saved'));
+window.addEventListener('offline', () => setSyncStatus('offline'));
 function syncQuickToggles() {
     setQtState(qtClock, clockState.visible);
     setQtState(qtTimer, timer.visible);
@@ -69,13 +82,27 @@ async function saveSlots(visible = currentVisible, activeSlot = null) {
         body.tag = "งานประชาสัมพันธ์ โรงเรียนเบญจมราชูทิศ";
     }
 
-    await setDoc(stateRef, body);
+    if (!navigator.onLine) {
+        setSyncStatus('offline');
+        currentVisible = visible;
+        syncQuickToggles();
+        return;
+    }
+
+    setSyncStatus('saving');
+    try {
+        await setDoc(stateRef, body);
+        setSyncStatus('saved');
+    } catch (err) {
+        console.error('บันทึกไม่สำเร็จ:', err);
+        setSyncStatus('error');
+    }
 
     currentVisible = visible;
     syncQuickToggles();
 }
 
-function render() { grid.replaceChildren(); slots.forEach((slot,index) => { const card = document.createElement('section'); card.className='slot-card'; card.innerHTML=`<div class="slot-title"><strong>♟ ข้อมูลคนที่ ${index+1}</strong><button type="button" class="go-live">▶ เอาขึ้นจอ</button></div><div class="slot-body"><label class="logo-picker"><input type="file" accept="image/png,image/jpeg,image/webp"><span class="logo-preview"><img alt=""><b>LOGO</b></span><em>เปลี่ยนโลโก้</em></label><div class="slot-fields"><input class="slot-name" maxlength="60" aria-label="ชื่อ"><input class="slot-role" maxlength="80" aria-label="ตำแหน่ง"></div></div>`; const image=card.querySelector('img'), placeholder=card.querySelector('b'), file=card.querySelector('input[type=file]'), name=card.querySelector('.slot-name'), role=card.querySelector('.slot-role'); image.src=slot.logo||''; image.hidden=!slot.logo; placeholder.hidden=Boolean(slot.logo); name.value=slot.name; role.value=slot.role; name.addEventListener('input',()=>{slot.name=name.value;queueSave();}); role.addEventListener('input',()=>{slot.role=role.value;queueSave();}); file.addEventListener('change',event=>{const picked=event.target.files[0];if(!picked)return;const reader=new FileReader();reader.onload=()=>{slot.logo=reader.result;image.src=slot.logo;image.hidden=false;placeholder.hidden=true;queueSave();};reader.readAsDataURL(picked);}); card.querySelector('.go-live').addEventListener('click',()=>{activeSlotIndex=index;saveSlots(true,slot);}); grid.append(card); }); }
+function render() { grid.replaceChildren(); slots.forEach((slot,index) => { const card = document.createElement('section'); card.className='slot-card'; card.innerHTML=`<div class="slot-title"><strong>♟ ข้อมูลคนที่ ${index+1}</strong><button type="button" class="go-live">▶ เอาขึ้นจอ</button></div><div class="slot-body"><label class="logo-picker"><input type="file" accept="image/png,image/jpeg,image/webp"><span class="logo-preview"><img alt=""><b>LOGO</b></span><em>เปลี่ยนโลโก้</em></label><div class="slot-fields"><input class="slot-name" maxlength="60" aria-label="ชื่อ"><input class="slot-role" maxlength="80" aria-label="ตำแหน่ง"></div></div>`; const image=card.querySelector('img'), placeholder=card.querySelector('b'), file=card.querySelector('input[type=file]'), name=card.querySelector('.slot-name'), role=card.querySelector('.slot-role'); image.src=slot.logo||''; image.hidden=!slot.logo; placeholder.hidden=Boolean(slot.logo); name.value=slot.name; role.value=slot.role; name.addEventListener('input',()=>{slot.name=name.value;queueSave();}); role.addEventListener('input',()=>{slot.role=role.value;queueSave();}); file.addEventListener('change',async event=>{const picked=event.target.files[0];if(!picked)return;const originalLabel=placeholder.textContent;placeholder.textContent='กำลังอัปโหลด...';placeholder.hidden=false;try{const url=await uploadLogo(picked,`logos/slot${index+1}`);slot.logo=url;image.src=slot.logo;image.hidden=false;placeholder.hidden=true;queueSave();}catch(err){placeholder.textContent=originalLabel;alert('อัปโหลดโลโก้ไม่สำเร็จ: '+err.message);}}); card.querySelector('.go-live').addEventListener('click',()=>{activeSlotIndex=index;saveSlots(true,slot);}); grid.append(card); }); }
 function bindDisplayControl(input, output) { input.addEventListener('input',()=>{output.textContent=`${input.value}%`;queueSave();}); }
 document.querySelector('#hideAll').addEventListener('click',()=>saveSlots(false)); bindDisplayControl(scaleInput,document.querySelector('#scaleValue')); bindDisplayControl(opacityInput,document.querySelector('#opacityValue')); bindDisplayControl(verticalInput,document.querySelector('#verticalValue'));
 [positionInput,backgroundColorInput,textColorInput,graphicStyleInput,effectStyleInput].forEach(input=>input.addEventListener('input',queueSave)); document.querySelector('#resetColors').addEventListener('click',()=>{backgroundColorInput.value='#ffffff';textColorInput.value='#17191d';saveSlots();});
@@ -105,7 +132,7 @@ function renderWatermarkToggle(){watermarkToggleBtn.textContent=watermarkState.v
 bindDisplayControl(watermarkScale,document.querySelector('#watermarkScaleValue'));
 watermarkPosition.addEventListener('input',queueSave);
 watermarkToggleBtn.addEventListener('click',()=>{watermarkState.visible=!watermarkState.visible;renderWatermarkToggle();saveSlots();});
-watermarkFile.addEventListener('change',event=>{const picked=event.target.files[0];if(!picked)return;const reader=new FileReader();reader.onload=()=>{watermarkState.logo=reader.result;saveSlots();};reader.readAsDataURL(picked);});
+watermarkFile.addEventListener('change',async event=>{const picked=event.target.files[0];if(!picked)return;watermarkFile.disabled=true;try{watermarkState.logo=await uploadLogo(picked,'logos/watermark');saveSlots();}catch(err){alert('อัปโหลดโลโก้ไม่สำเร็จ: '+err.message);}finally{watermarkFile.disabled=false;}});
 
 qtClock.addEventListener('change',()=>{clockState.visible=qtClock.checked;renderClockToggle();saveSlots();});
 qtTimer.addEventListener('change',()=>{timer.visible=qtTimer.checked;renderTimerToggle();saveSlots();});
@@ -139,37 +166,66 @@ qtWatermark.addEventListener('change',()=>{
     watermarkState.visible=qtWatermark.checked;renderWatermarkToggle();saveSlots();
 });
 
-const PRESET_KEY = 'boStudioPresets';
-function loadPresets(){ try { return JSON.parse(localStorage.getItem(PRESET_KEY)) || []; } catch { return []; } }
-function savePresets(list){ localStorage.setItem(PRESET_KEY, JSON.stringify(list)); }
-function renderPresetOptions(){ const list = loadPresets(); presetSelect.innerHTML = '<option value="">— เลือก Preset —</option>' + list.map((p,i)=>`<option value="${i}">${p.name}</option>`).join(''); }
-presetSaveBtn.addEventListener('click', () => {
+let presetList = [];
+async function loadPresetsFromCloud() {
+    try {
+        const snap = await getDoc(presetsRef);
+        if (snap.exists() && Array.isArray(snap.data().list)) {
+            presetList = snap.data().list;
+            return;
+        }
+    } catch (err) {
+        console.error('โหลด preset จาก Firestore ไม่สำเร็จ:', err);
+    }
+    // ยังไม่มี preset บน Firestore — ลองย้ายจาก localStorage เดิม (ทำครั้งเดียว)
+    try {
+        const legacy = JSON.parse(localStorage.getItem('boStudioPresets')) || [];
+        if (legacy.length) {
+            presetList = legacy;
+            await setDoc(presetsRef, { list: presetList });
+        }
+    } catch { /* ไม่มีของเดิมก็ไม่เป็นไร */ }
+}
+function renderPresetOptions(){ presetSelect.innerHTML = '<option value="">— เลือก Preset —</option>' + presetList.map((p,i)=>`<option value="${i}">${p.name}</option>`).join(''); }
+async function savePresetList() {
+    try { await setDoc(presetsRef, { list: presetList }); }
+    catch (err) { alert('บันทึก Preset ไม่สำเร็จ: ' + err.message); }
+}
+presetSaveBtn.addEventListener('click', async () => {
     const name = presetNameInput.value.trim();
     if (!name) return;
-    const list = loadPresets();
-    list.push({ name, scale:Number(scaleInput.value), opacity:Number(opacityInput.value), position:positionInput.value, vertical:Number(verticalInput.value), backgroundColor:backgroundColorInput.value, textColor:textColorInput.value, graphicStyle:graphicStyleInput.value, effectStyle:effectStyleInput.value });
-    savePresets(list);
+    presetList.push({
+        name,
+        scale:Number(scaleInput.value), opacity:Number(opacityInput.value), position:positionInput.value, vertical:Number(verticalInput.value),
+        backgroundColor:backgroundColorInput.value, textColor:textColorInput.value, graphicStyle:graphicStyleInput.value, effectStyle:effectStyleInput.value,
+        timerVisible: timer.visible, clockVisible: clockState.visible, tickerVisible: tickerState.visible, qrVisible: qrState.visible, watermarkVisible: watermarkState.visible
+    });
     presetNameInput.value = '';
     renderPresetOptions();
+    await savePresetList();
 });
-presetApplyBtn.addEventListener('click', () => {
+presetApplyBtn.addEventListener('click', async () => {
     if (presetSelect.value === '') return;
-    const preset = loadPresets()[Number(presetSelect.value)];
+    const preset = presetList[Number(presetSelect.value)];
     if (!preset) return;
     scaleInput.value = preset.scale; opacityInput.value = preset.opacity; positionInput.value = preset.position; verticalInput.value = preset.vertical; backgroundColorInput.value = preset.backgroundColor; textColorInput.value = preset.textColor; graphicStyleInput.value = preset.graphicStyle; effectStyleInput.value = preset.effectStyle ?? "none";
     document.querySelector('#scaleValue').textContent = `${scaleInput.value}%`;
     document.querySelector('#opacityValue').textContent = `${opacityInput.value}%`;
     document.querySelector('#verticalValue').textContent = `${verticalInput.value}%`;
+    if (preset.timerVisible !== undefined) { timer.visible = preset.timerVisible; renderTimerToggle(); }
+    if (preset.clockVisible !== undefined) { clockState.visible = preset.clockVisible; renderClockToggle(); }
+    if (preset.tickerVisible !== undefined) { tickerState.visible = preset.tickerVisible; renderTickerToggle(); }
+    if (preset.qrVisible !== undefined) { qrState.visible = preset.qrVisible; renderQrToggle(); }
+    if (preset.watermarkVisible !== undefined) { watermarkState.visible = preset.watermarkVisible; renderWatermarkToggle(); }
     saveSlots();
 });
-presetDeleteBtn.addEventListener('click', () => {
+presetDeleteBtn.addEventListener('click', async () => {
     if (presetSelect.value === '') return;
-    const list = loadPresets();
-    list.splice(Number(presetSelect.value), 1);
-    savePresets(list);
+    presetList.splice(Number(presetSelect.value), 1);
     renderPresetOptions();
+    await savePresetList();
 });
-renderPresetOptions();
+loadPresetsFromCloud().then(renderPresetOptions);
 
 const navItems = document.querySelectorAll('.dashboard-nav [data-tab]');
 const tabPanels = Array.prototype.filter.call(document.querySelectorAll('[data-tab]'), el => !el.closest('.dashboard-nav'));
@@ -179,6 +235,13 @@ function showTab(tab) {
 }
 navItems.forEach(item => item.addEventListener('click', () => showTab(item.dataset.tab)));
 showTab('system');
+
+if (previewToggleBtn && livePreviewBox) {
+    previewToggleBtn.addEventListener('click', () => {
+        const hidden = livePreviewBox.classList.toggle('collapsed');
+        previewToggleBtn.textContent = hidden ? 'แสดง' : 'ซ่อน';
+    });
+}
 
 function goLiveNext() {
     if (!slots.length) return;

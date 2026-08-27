@@ -6,7 +6,7 @@
 </head>
 <body class="control-page slots-page">
   <main class="slots-panel">
-    <header class="dashboard-header"><div><span class="eyebrow">OBS GRAPHICS CONTROL</span><h1>ควบคุมกราฟิก</h1></div><div class="dashboard-status quick-toggles">
+    <header class="dashboard-header"><div><span class="eyebrow">OBS GRAPHICS CONTROL</span><h1>ควบคุมกราฟิก</h1><span id="syncStatus" class="sync-status sync-saved">● บันทึกแล้ว</span></div><div class="dashboard-status quick-toggles">
       <label class="qt-item"><input type="checkbox" id="qtLowerThird"><span>ป้ายชื่อ</span></label>
       <label class="qt-item"><input type="checkbox" id="qtTimer"><span>จับเวลา</span></label>
       <label class="qt-item"><input type="checkbox" id="qtClock"><span>นาฬิกา</span></label>
@@ -84,6 +84,10 @@
     <p class="hint">เลือกข้อมูลในช่องที่ต้องการ แล้วกด "เอาขึ้นจอ" · Overlay: <code>/overlay.html</code></p>
     <p class="hint">⌨️ คีย์ลัด: <code>Space</code> เอาคนถัดไปขึ้นจอ · <code>1–9, 0</code> เลือกคนที่ N ทันที · <code>Esc</code> ปิด Lower Third (ใช้ไม่ได้ขณะพิมพ์ในช่องข้อความ)</p>
   </main>
+  <div id="livePreview" class="live-preview">
+    <div class="live-preview-head"><span>🔴 LIVE PREVIEW</span><button type="button" id="togglePreview">ซ่อน</button></div>
+    <div class="live-preview-frame"><iframe src="overlay.html" title="Live Preview"></iframe></div>
+  </div>
   <script type="module" src="control.js"></script>
 </body>
 </html>

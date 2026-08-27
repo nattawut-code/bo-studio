@@ -11,6 +11,7 @@ import {
 export const db = getFirestore(app);
 
 export const stateRef = doc(db, "bo-studio", "state");
+export const presetsRef = doc(db, "bo-studio", "presets");
 
 export {
     getDoc,
