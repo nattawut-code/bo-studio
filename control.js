@@ -1,5 +1,39 @@
 import { stateRef, presetsRef, getDoc, setDoc } from "./firestore.js";
-import { uploadLogo } from "./storage.js";
+
+// บีบอัด/ย่อขนาดรูปก่อนแปลงเป็น base64 เก็บใน Firestore
+// กันไม่ให้รูปจากมือถือ (มักหลาย MB) ทำให้ document ใหญ่จนเสี่ยงชน 1MB limit ของ Firestore
+function loadImageEl(file) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => { URL.revokeObjectURL(img.src); resolve(img); };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+    });
+}
+async function fileToCompressedDataURL(file, maxDim = 480, maxBytes = 350 * 1024) {
+    const okTypes = ['image/png', 'image/jpeg', 'image/webp'];
+    if (!okTypes.includes(file.type)) throw new Error('รองรับเฉพาะไฟล์ PNG, JPEG หรือ WEBP');
+    const img = await loadImageEl(file);
+    let { width, height } = img;
+    const scale = Math.min(1, maxDim / Math.max(width, height));
+    width = Math.max(1, Math.round(width * scale));
+    height = Math.max(1, Math.round(height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+    const isPng = file.type === 'image/png';
+    let quality = 0.85;
+    let dataUrl = canvas.toDataURL(isPng ? 'image/png' : 'image/jpeg', quality);
+    // ถ้าเป็น JPEG/WEBP และยังใหญ่เกิน ลดคุณภาพลงเรื่อยๆ (PNG โปร่งใสลดคุณภาพไม่ได้ ลดได้แค่ขนาดมิติ)
+    while (!isPng && dataUrl.length > maxBytes * 1.37 && quality > 0.4) {
+        quality -= 0.15;
+        dataUrl = canvas.toDataURL('image/jpeg', quality);
+    }
+    if (dataUrl.length > maxBytes * 1.37) {
+        throw new Error('ไฟล์ยังใหญ่เกินไปหลังบีบอัดแล้ว ลองเลือกรูปที่มีขนาดเล็กลง หรือพื้นหลังโปร่งใสน้อยลง');
+    }
+    return dataUrl;
+}
 const grid = document.querySelector('#slotsGrid');
 const scaleInput = document.querySelector('#scale'), opacityInput = document.querySelector('#opacity'), positionInput = document.querySelector('#position'), verticalInput = document.querySelector('#vertical'), backgroundColorInput = document.querySelector('#backgroundColor'), textColorInput = document.querySelector('#textColor'), graphicStyleInput = document.querySelector('#graphicStyle'), effectStyleInput = document.querySelector('#effectStyle');
 const timerMinutes = document.querySelector('#timerMinutes'), timerDisplay = document.querySelector('#timerDisplay'), timerToggle = document.querySelector('#timerToggle'), timerScale = document.querySelector('#timerScale'), timerFullScreen = document.querySelector('#timerFullScreen');
@@ -102,7 +136,7 @@ async function saveSlots(visible = currentVisible, activeSlot = null) {
     syncQuickToggles();
 }
 
-function render() { grid.replaceChildren(); slots.forEach((slot,index) => { const card = document.createElement('section'); card.className='slot-card'; card.innerHTML=`<div class="slot-title"><strong>♟ ข้อมูลคนที่ ${index+1}</strong><button type="button" class="go-live">▶ เอาขึ้นจอ</button></div><div class="slot-body"><label class="logo-picker"><input type="file" accept="image/png,image/jpeg,image/webp"><span class="logo-preview"><img alt=""><b>LOGO</b></span><em>เปลี่ยนโลโก้</em></label><div class="slot-fields"><input class="slot-name" maxlength="60" aria-label="ชื่อ"><input class="slot-role" maxlength="80" aria-label="ตำแหน่ง"></div></div>`; const image=card.querySelector('img'), placeholder=card.querySelector('b'), file=card.querySelector('input[type=file]'), name=card.querySelector('.slot-name'), role=card.querySelector('.slot-role'); image.src=slot.logo||''; image.hidden=!slot.logo; placeholder.hidden=Boolean(slot.logo); name.value=slot.name; role.value=slot.role; name.addEventListener('input',()=>{slot.name=name.value;queueSave();}); role.addEventListener('input',()=>{slot.role=role.value;queueSave();}); file.addEventListener('change',async event=>{const picked=event.target.files[0];if(!picked)return;const originalLabel=placeholder.textContent;placeholder.textContent='กำลังอัปโหลด...';placeholder.hidden=false;try{const url=await uploadLogo(picked,`logos/slot${index+1}`);slot.logo=url;image.src=slot.logo;image.hidden=false;placeholder.hidden=true;queueSave();}catch(err){placeholder.textContent=originalLabel;alert('อัปโหลดโลโก้ไม่สำเร็จ: '+err.message);}}); card.querySelector('.go-live').addEventListener('click',()=>{activeSlotIndex=index;saveSlots(true,slot);}); grid.append(card); }); }
+function render() { grid.replaceChildren(); slots.forEach((slot,index) => { const card = document.createElement('section'); card.className='slot-card'; card.innerHTML=`<div class="slot-title"><strong>♟ ข้อมูลคนที่ ${index+1}</strong><button type="button" class="go-live">▶ เอาขึ้นจอ</button></div><div class="slot-body"><label class="logo-picker"><input type="file" accept="image/png,image/jpeg,image/webp"><span class="logo-preview"><img alt=""><b>LOGO</b></span><em>เปลี่ยนโลโก้</em></label><div class="slot-fields"><input class="slot-name" maxlength="60" aria-label="ชื่อ"><input class="slot-role" maxlength="80" aria-label="ตำแหน่ง"></div></div>`; const image=card.querySelector('img'), placeholder=card.querySelector('b'), file=card.querySelector('input[type=file]'), name=card.querySelector('.slot-name'), role=card.querySelector('.slot-role'); image.src=slot.logo||''; image.hidden=!slot.logo; placeholder.hidden=Boolean(slot.logo); name.value=slot.name; role.value=slot.role; name.addEventListener('input',()=>{slot.name=name.value;queueSave();}); role.addEventListener('input',()=>{slot.role=role.value;queueSave();}); file.addEventListener('change',async event=>{const picked=event.target.files[0];if(!picked)return;const originalLabel=placeholder.textContent;placeholder.textContent='กำลังประมวลผล...';placeholder.hidden=false;try{const dataUrl=await fileToCompressedDataURL(picked);slot.logo=dataUrl;image.src=slot.logo;image.hidden=false;placeholder.hidden=true;queueSave();}catch(err){placeholder.textContent=originalLabel;alert('ไม่สามารถใช้รูปนี้ได้: '+err.message);}}); card.querySelector('.go-live').addEventListener('click',()=>{activeSlotIndex=index;saveSlots(true,slot);}); grid.append(card); }); }
 function bindDisplayControl(input, output) { input.addEventListener('input',()=>{output.textContent=`${input.value}%`;queueSave();}); }
 document.querySelector('#hideAll').addEventListener('click',()=>saveSlots(false)); bindDisplayControl(scaleInput,document.querySelector('#scaleValue')); bindDisplayControl(opacityInput,document.querySelector('#opacityValue')); bindDisplayControl(verticalInput,document.querySelector('#verticalValue'));
 [positionInput,backgroundColorInput,textColorInput,graphicStyleInput,effectStyleInput].forEach(input=>input.addEventListener('input',queueSave)); document.querySelector('#resetColors').addEventListener('click',()=>{backgroundColorInput.value='#ffffff';textColorInput.value='#17191d';saveSlots();});
@@ -132,7 +166,7 @@ function renderWatermarkToggle(){watermarkToggleBtn.textContent=watermarkState.v
 bindDisplayControl(watermarkScale,document.querySelector('#watermarkScaleValue'));
 watermarkPosition.addEventListener('input',queueSave);
 watermarkToggleBtn.addEventListener('click',()=>{watermarkState.visible=!watermarkState.visible;renderWatermarkToggle();saveSlots();});
-watermarkFile.addEventListener('change',async event=>{const picked=event.target.files[0];if(!picked)return;watermarkFile.disabled=true;try{watermarkState.logo=await uploadLogo(picked,'logos/watermark');saveSlots();}catch(err){alert('อัปโหลดโลโก้ไม่สำเร็จ: '+err.message);}finally{watermarkFile.disabled=false;}});
+watermarkFile.addEventListener('change',async event=>{const picked=event.target.files[0];if(!picked)return;watermarkFile.disabled=true;try{watermarkState.logo=await fileToCompressedDataURL(picked);saveSlots();}catch(err){alert('ไม่สามารถใช้รูปนี้ได้: '+err.message);}finally{watermarkFile.disabled=false;}});
 
 qtClock.addEventListener('change',()=>{clockState.visible=qtClock.checked;renderClockToggle();saveSlots();});
 qtTimer.addEventListener('change',()=>{timer.visible=qtTimer.checked;renderTimerToggle();saveSlots();});
