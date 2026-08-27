@@ -1,6 +1,6 @@
 import { stateRef, getDoc, setDoc } from "./firestore.js";
 const grid = document.querySelector('#slotsGrid');
-const scaleInput = document.querySelector('#scale'), opacityInput = document.querySelector('#opacity'), positionInput = document.querySelector('#position'), verticalInput = document.querySelector('#vertical'), backgroundColorInput = document.querySelector('#backgroundColor'), textColorInput = document.querySelector('#textColor'), graphicStyleInput = document.querySelector('#graphicStyle');
+const scaleInput = document.querySelector('#scale'), opacityInput = document.querySelector('#opacity'), positionInput = document.querySelector('#position'), verticalInput = document.querySelector('#vertical'), backgroundColorInput = document.querySelector('#backgroundColor'), textColorInput = document.querySelector('#textColor'), graphicStyleInput = document.querySelector('#graphicStyle'), effectStyleInput = document.querySelector('#effectStyle');
 const timerMinutes = document.querySelector('#timerMinutes'), timerDisplay = document.querySelector('#timerDisplay'), timerToggle = document.querySelector('#timerToggle'), timerScale = document.querySelector('#timerScale'), timerFullScreen = document.querySelector('#timerFullScreen');
 const clockScale = document.querySelector('#clockScale'), clockPosition = document.querySelector('#clockPosition'), clockVertical = document.querySelector('#clockVertical'), clockToggle = document.querySelector('#clockToggle');
 const presetSelect = document.querySelector('#presetSelect'), presetApplyBtn = document.querySelector('#presetApply'), presetDeleteBtn = document.querySelector('#presetDelete'), presetNameInput = document.querySelector('#presetName'), presetSaveBtn = document.querySelector('#presetSave');
@@ -34,6 +34,7 @@ async function saveSlots(visible = currentVisible, activeSlot = null) {
         backgroundColor: backgroundColorInput.value,
         textColor: textColorInput.value,
         graphicStyle: graphicStyleInput.value,
+        effectStyle: effectStyleInput.value,
         timerDuration: timer.duration,
         timerRemaining: timer.remaining,
         timerRunning: timer.running,
@@ -77,7 +78,7 @@ async function saveSlots(visible = currentVisible, activeSlot = null) {
 function render() { grid.replaceChildren(); slots.forEach((slot,index) => { const card = document.createElement('section'); card.className='slot-card'; card.innerHTML=`<div class="slot-title"><strong>♟ ข้อมูลคนที่ ${index+1}</strong><button type="button" class="go-live">▶ เอาขึ้นจอ</button></div><div class="slot-body"><label class="logo-picker"><input type="file" accept="image/png,image/jpeg,image/webp"><span class="logo-preview"><img alt=""><b>LOGO</b></span><em>เปลี่ยนโลโก้</em></label><div class="slot-fields"><input class="slot-name" maxlength="60" aria-label="ชื่อ"><input class="slot-role" maxlength="80" aria-label="ตำแหน่ง"></div></div>`; const image=card.querySelector('img'), placeholder=card.querySelector('b'), file=card.querySelector('input[type=file]'), name=card.querySelector('.slot-name'), role=card.querySelector('.slot-role'); image.src=slot.logo||''; image.hidden=!slot.logo; placeholder.hidden=Boolean(slot.logo); name.value=slot.name; role.value=slot.role; name.addEventListener('input',()=>{slot.name=name.value;queueSave();}); role.addEventListener('input',()=>{slot.role=role.value;queueSave();}); file.addEventListener('change',event=>{const picked=event.target.files[0];if(!picked)return;const reader=new FileReader();reader.onload=()=>{slot.logo=reader.result;image.src=slot.logo;image.hidden=false;placeholder.hidden=true;queueSave();};reader.readAsDataURL(picked);}); card.querySelector('.go-live').addEventListener('click',()=>{activeSlotIndex=index;saveSlots(true,slot);}); grid.append(card); }); }
 function bindDisplayControl(input, output) { input.addEventListener('input',()=>{output.textContent=`${input.value}%`;queueSave();}); }
 document.querySelector('#hideAll').addEventListener('click',()=>saveSlots(false)); bindDisplayControl(scaleInput,document.querySelector('#scaleValue')); bindDisplayControl(opacityInput,document.querySelector('#opacityValue')); bindDisplayControl(verticalInput,document.querySelector('#verticalValue'));
-[positionInput,backgroundColorInput,textColorInput,graphicStyleInput].forEach(input=>input.addEventListener('input',queueSave)); document.querySelector('#resetColors').addEventListener('click',()=>{backgroundColorInput.value='#ffffff';textColorInput.value='#17191d';saveSlots();});
+[positionInput,backgroundColorInput,textColorInput,graphicStyleInput,effectStyleInput].forEach(input=>input.addEventListener('input',queueSave)); document.querySelector('#resetColors').addEventListener('click',()=>{backgroundColorInput.value='#ffffff';textColorInput.value='#17191d';saveSlots();});
 timerMinutes.addEventListener('change',()=>{if(timer.running)return;timer.duration=Math.max(1,Number(timerMinutes.value)||1)*60;timer.remaining=timer.duration;renderTimer();queueSave();}); timerToggle.addEventListener('click',()=>{timer.visible=!timer.visible;renderTimerToggle();saveSlots();}); timerScale.addEventListener('input',()=>{document.querySelector('#timerScaleValue').textContent=`${timerScale.value}%`;queueSave();}); timerFullScreen.addEventListener('change',queueSave); document.querySelector('#timerStart').addEventListener('click',()=>{if(!timer.running){timer.remaining=remainingTimer();timer.running=true;timer.startedAt=Date.now();saveSlots();}}); document.querySelector('#timerPause').addEventListener('click',()=>{if(timer.running){timer.remaining=remainingTimer();timer.running=false;timer.startedAt=null;saveSlots();renderTimer();}}); document.querySelector('#timerReset').addEventListener('click',()=>{timer.duration=Math.max(1,Number(timerMinutes.value)||1)*60;timer.remaining=timer.duration;timer.running=false;timer.startedAt=null;saveSlots();renderTimer();});
 function renderTimerToggle(){timerToggle.textContent=timer.visible?'ปิด Countdown':'เปิด Countdown';timerToggle.classList.toggle('is-off',!timer.visible);syncQuickToggles();}
 function renderClockToggle(){clockToggle.textContent=clockState.visible?'ปิด Clock':'เปิด Clock';clockToggle.classList.toggle('is-off',!clockState.visible);syncQuickToggles();}
@@ -146,7 +147,7 @@ presetSaveBtn.addEventListener('click', () => {
     const name = presetNameInput.value.trim();
     if (!name) return;
     const list = loadPresets();
-    list.push({ name, scale:Number(scaleInput.value), opacity:Number(opacityInput.value), position:positionInput.value, vertical:Number(verticalInput.value), backgroundColor:backgroundColorInput.value, textColor:textColorInput.value, graphicStyle:graphicStyleInput.value });
+    list.push({ name, scale:Number(scaleInput.value), opacity:Number(opacityInput.value), position:positionInput.value, vertical:Number(verticalInput.value), backgroundColor:backgroundColorInput.value, textColor:textColorInput.value, graphicStyle:graphicStyleInput.value, effectStyle:effectStyleInput.value });
     savePresets(list);
     presetNameInput.value = '';
     renderPresetOptions();
@@ -155,7 +156,7 @@ presetApplyBtn.addEventListener('click', () => {
     if (presetSelect.value === '') return;
     const preset = loadPresets()[Number(presetSelect.value)];
     if (!preset) return;
-    scaleInput.value = preset.scale; opacityInput.value = preset.opacity; positionInput.value = preset.position; verticalInput.value = preset.vertical; backgroundColorInput.value = preset.backgroundColor; textColorInput.value = preset.textColor; graphicStyleInput.value = preset.graphicStyle;
+    scaleInput.value = preset.scale; opacityInput.value = preset.opacity; positionInput.value = preset.position; verticalInput.value = preset.vertical; backgroundColorInput.value = preset.backgroundColor; textColorInput.value = preset.textColor; graphicStyleInput.value = preset.graphicStyle; effectStyleInput.value = preset.effectStyle ?? "none";
     document.querySelector('#scaleValue').textContent = `${scaleInput.value}%`;
     document.querySelector('#opacityValue').textContent = `${opacityInput.value}%`;
     document.querySelector('#verticalValue').textContent = `${verticalInput.value}%`;
@@ -217,6 +218,7 @@ getDoc(stateRef)
         backgroundColorInput.value = state.backgroundColor ?? "#ffffff";
         textColorInput.value = state.textColor ?? "#17191d";
         graphicStyleInput.value = state.graphicStyle ?? "classic";
+        effectStyleInput.value = state.effectStyle ?? "none";
 
         document.querySelector("#scaleValue").textContent = `${scaleInput.value}%`;
         document.querySelector("#opacityValue").textContent = `${opacityInput.value}%`;
